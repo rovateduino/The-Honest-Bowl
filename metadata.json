@@ -1,0 +1,6 @@
+{
+  "name": "Canine Natural Nutrition",
+  "description": "High-converting Canadian e-commerce sales landing page for natural dog food guide, interactive portion calculator, 14-day transition schedule, and bonus suite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

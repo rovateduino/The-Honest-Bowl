@@ -1,0 +1,15 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+API CANINE FIREBASE.txt
+Chaves API KEY.txt
+firebase-applet-config.json
+*.ps1
+bun.lock
+bun.lockb
+checklist.md
