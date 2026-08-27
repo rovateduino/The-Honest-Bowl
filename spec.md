@@ -1,11 +1,12 @@
 # SPEC.md — Documentação Completa do Projeto "The Honest Bowl"
 
-**Versão do Documento:** 2.0
+**Versão do Documento:** 2.1
 **Última Atualização:** 27/08/2026
 **Histórico de Auditorias:**
 - v1.0 — 14/08/2026 — Auditoria inicial (pontuação 5.2/10)
 - v1.5 — 27/08/2026 — Pós-refatoração (pontuação 7.5/10)
 - v2.0 — 27/08/2026 — Deploy Vercel + correções de infraestrutura
+- v2.1 — 27/08/2026 — Migração de produtos para GitHub Releases
 
 ---
 
@@ -55,20 +56,21 @@ Landing page de alta conversão para **e-commerce digital** voltada ao mercado c
 
 ```
 The Honest Bowl/
-├── api/                                    ← 🆕 Serverless functions (Vercel)
+├── api/                                    ← Serverless functions (Vercel)
 │   ├── checkout.js                         ← POST /api/checkout (Firestore + Stripe)
 │   └── send-email.js                       ← POST /api/send-email (Brevo)
 ├── public/
 │   ├── assets/images/                      ← Imagens estáticas
-│   ├── *.pdf                               ← eBooks para download (4 PDFs)
-│   └── *.xlsx                              ← Planilha Excel
+│   └── *.jpg                               ← Imagens de receitas
+├── scripts/
+│   └── uploadToStorage.mjs                 ← Script one-time migração para Firebase Storage
 ├── src/
 │   ├── assets/images/                      ← Imagens (source)
 │   ├── components/                         ← 17 componentes React
 │   │   ├── CanadianContext.tsx
 │   │   ├── CheckoutModal.tsx               ← POST /api/checkout server-side
 │   │   ├── ComparisonTable.tsx
-│   │   ├── DownloadPage.tsx                ← Página de download pós-compra
+│   │   ├── DownloadPage.tsx                ← Página de download pós-compra (usa DOWNLOAD_LINKS)
 │   │   ├── EmailDownloadModal.tsx           ← Aguarda resposta da API
 │   │   ├── ErrorBoundary.tsx               ← Error Boundary React
 │   │   ├── ErrorBoundary.test.tsx           ← 6 testes
@@ -84,6 +86,7 @@ The Honest Bowl/
 │   │   ├── TransitionSchedule.tsx
 │   │   └── TrustBadges.tsx
 │   ├── data/
+│   │   ├── downloadLinks.ts                ← URLs dos produtos (GitHub Releases)
 │   │   └── productData.ts
 │   ├── lib/
 │   │   ├── constants.ts                     ← Preços, fórmulas, distribuição de macros
@@ -93,7 +96,7 @@ The Honest Bowl/
 │   ├── utils/
 │   │   ├── calculatePortion.ts              ← Lógica de cálculo extraída e testável
 │   │   ├── calculatePortion.test.ts         ← 8 testes unitários
-│   │   └── excelGenerator.ts
+│   │   └── excelGenerator.ts                ← Usa DOWNLOAD_LINKS para download
 │   ├── App.tsx                              ← Lazy loading + Suspense
 │   ├── index.css
 │   ├── main.tsx                             ← ErrorBoundary no root
@@ -105,13 +108,13 @@ The Honest Bowl/
 ├── metadata.json
 ├── package.json
 ├── server.ts                                ← Express (dev local) — Brevo + Resend + Helmet
-├── vercel.json                              ← 🆕 Configuração Vercel (rewrites + headers)
+├── vercel.json                              ← Configuração Vercel (rewrites + headers)
 ├── tsconfig.json                            ← strict: true + noUnusedLocals
 ├── vitest.config.ts                         ← Configuração de testes
 └── vite.config.ts
 ```
 
-**Total de arquivos fonte:** 25 (src/) + 2 (api/) + 7 (config raiz)
+**Total de arquivos fonte:** 26 (src/) + 2 (api/) + 1 (scripts/) + 7 (config raiz)
 
 ---
 
@@ -149,6 +152,9 @@ Problemas identificados na auditoria original (pontuação 5.2/10):
 | — | CheckoutModal com ARIA (role, aria-modal, labels) | ✅ Implementado |
 | — | Firestore write server-side via Firebase Admin SDK | ✅ Implementado |
 | — | Stripe URL em variável de ambiente | ✅ Implementado |
+| — | Migração de produtos para GitHub Releases (~60MB removidos do repo) | ✅ Implementado |
+| — | `src/data/downloadLinks.ts` com constantes tipadas | ✅ Implementado |
+| — | `scripts/uploadToStorage.mjs` para migração Future (Firebase Storage) | ✅ Criado |
 
 ### 4.3 Deploy Vercel (27/08/2026 —after refactoring)
 
@@ -222,7 +228,9 @@ https://the-honest-bowl.vercel.app/
          │
 7. Após pagamento → Stripe redireciona para /download
          │
-8. DownloadPage: 5 links de download (4 PDFs + 1 XLSX)
+8. DownloadPage: 5 links de download via DOWNLOAD_LINKS (GitHub Releases)
+   - ebookMain, therapeuticGuide, companionGuide, safetyPoster, portionCalculator
+   - URLs centralizadas em src/data/downloadLinks.ts
 ```
 
 ### 5.3 Fluxo de Email (Lead Capture)
@@ -347,8 +355,9 @@ https://the-honest-bowl.vercel.app/
 | **SEO** | ✅ Completo | Meta tags, OG, Twitter Card, keywords |
 | **Deploy Vercel** | ✅ Funcionando | Serverless functions + SPA estática |
 | **Git/CI** | ✅ Configurado | Push para `main` → deploy automático no Vercel |
+| **Download links** | ✅ Migrados | GitHub Releases via `DOWNLOAD_LINKS` em `src/data/downloadLinks.ts` |
 
-**Score de Arquitetura: 8/10** (era 7/10)
+**Score de Arquitetura: 8.5/10** (era 7/10)
 
 ---
 
@@ -500,6 +509,8 @@ Os seguintes arquivos/devem estar sempre no `.gitignore`:
 | `dist/` | Build de produção |
 | `coverage/` | Cobertura de testes |
 | `*.ps1` | Scripts PowerShell |
+| `*.pdf` | Produtos digitais (hosted on GitHub Releases) |
+| `*.xlsx` | Planilhas de produto (hosted on GitHub Releases) |
 
 ---
 
@@ -518,7 +529,7 @@ Os seguintes arquivos/devem estar sempre no `.gitignore`:
 | **Manutenibilidade** | 7/10 | 8/10 | 8/10 | +1 |
 | **Testes** | 0/10 | 4/10 | 4/10 | **+4** |
 | **Deploy/Infra** | 1/10 | 1/10 | 7/10 | **+6** |
-| **Geral** | **5.2/10** | **7.5/10** | **8.0/10** | **+2.8** |
+| **Geral** | **5.2/10** | **7.5/10** | **8.2/10** | **+3.0** |
 
 ---
 
@@ -533,7 +544,6 @@ Os seguintes arquivos/devem estar sempre no `.gitignore`:
 | 3 | **Imagens sem otimização** — Sem WebP, sem `srcset`, sem `loading="lazy"` | Performance em mobile | Médio |
 | 4 | **Cobertura de testes baixa** — Apenas calculadora e ErrorBoundary testados | Regressão em refactorings | Médio |
 | 5 | **`unsafe-inline` no CSP** — Necessário para Tailwind mas enfraquece XSS protection | Segurança | Baixo |
-| 6 | **PDFs no repo Git** — 4 PDFs somam ~60MB. Servir de CDN ou storage externo | Repo尺寸 + performance de deploy | Médio |
 
 ### 🟢 Prioridade 2 — Baixo
 
@@ -603,7 +613,7 @@ git ls-tree origin/main api/
 ### Curto prazo (2 semanas)
 4. Resolver fluxo de captura de email (problema #1)
 5. Adicionar focus trap nos modais
-6. Mover PDFs para storage externo (reduzir repo)
+6. ~~Mover PDFs para storage externo (reduzir repo)~~ ✅ Concluído — GitHub Releases
 
 ### Médio prático (1 mês)
 7. Aumentar cobertura de testes (mínimo: endpoints de API)
