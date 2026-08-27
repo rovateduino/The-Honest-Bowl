@@ -1,18 +1,42 @@
-const brevo = require('@getbrevo/brevo');
+import brevo from '@getbrevo/brevo';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+let firebaseAdminApp = null;
+
+async function getFirestoreDb() {
+  const { initializeApp, cert, getApps } = await import('firebase-admin/app');
+  const { getFirestore } = await import('firebase-admin/firestore');
+
+  if (firebaseAdminApp) return getFirestore(firebaseAdminApp);
+
+  const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  if (!projectId || !clientEmail || !privateKey) {
+    console.warn('Firebase Admin credentials not configured. Lead not saved.');
+    return null;
+  }
+
+  const existingApps = getApps();
+  firebaseAdminApp = existingApps.length
+    ? existingApps[0]
+    : initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
+
+  return getFirestore(firebaseAdminApp);
+}
 
 /**
  * POST /api/checkout
  *
- * Serverless function (Vercel / Netlify) — saves lead to Firestore
+ * Serverless function (Vercel) — saves lead to Firestore
  * and returns the Stripe checkout URL.
  *
  * Body: { fullName: string, email: string, province: string }
  * Response: { success: boolean, checkoutUrl?: string, error?: string }
  */
 export default async function handler(req, res) {
-  // ── CORS preflight ──────────────────────────────────────────────
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -20,12 +44,10 @@ export default async function handler(req, res) {
     return res.status(204).end();
   }
 
-  // ── Method guard ────────────────────────────────────────────────
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Method not allowed.' });
   }
 
-  // ── Input validation ────────────────────────────────────────────
   const { fullName, email, province } = req.body || {};
 
   const trimmedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -39,32 +61,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ success: false, error: 'Full name is required.' });
   }
 
-  // ── Env check ───────────────────────────────────────────────────
   const stripeUrl = process.env.STRIPE_CHECKOUT_URL;
   if (!stripeUrl) {
     console.error('STRIPE_CHECKOUT_URL environment variable is not configured.');
     return res.status(500).json({ success: false, error: 'Payment configuration error. Please try again later.' });
   }
 
-  // ── Save lead to Firestore (server-side) ────────────────────────
+  // Save lead to Firestore (server-side, with Admin SDK)
   try {
-    const admin = require('firebase-admin');
-
-    // Initialize Firebase Admin only once (cold start)
-    if (!admin.apps.length) {
-      const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
-      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-      if (projectId && clientEmail && privateKey) {
-        admin.initializeApp({
-          credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
-        });
-      }
-    }
-
-    if (admin.apps.length) {
-      const db = admin.firestore();
+    const db = await getFirestoreDb();
+    if (db) {
       await db.collection('leads').add({
         fullName: trimmedName,
         email: trimmedEmail,
@@ -72,15 +78,12 @@ export default async function handler(req, res) {
         createdAt: new Date(),
         status: 'checkout_started',
       });
-    } else {
-      console.warn('Firebase Admin not initialized. Lead not saved.');
     }
   } catch (err) {
     console.error('Error saving lead to Firestore:', err);
-    // Non-blocking: proceed to redirect even if Firestore write fails
   }
 
-  // ── Send confirmation email (best-effort) ───────────────────────
+  // Send confirmation email (best-effort)
   const brevoApiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.BREVO_SENDER_EMAIL;
 
@@ -110,10 +113,8 @@ export default async function handler(req, res) {
       await apiInstance.sendTransacEmail(sendSmtpEmail);
     } catch (err) {
       console.error('Brevo confirmation email failed:', err);
-      // Non-blocking: checkout still works without confirmation email
     }
   }
 
-  // ── Return Stripe checkout URL ──────────────────────────────────
   return res.status(200).json({ success: true, checkoutUrl: stripeUrl });
 }

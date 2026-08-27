@@ -1,4 +1,4 @@
-const brevo = require('@getbrevo/brevo');
+import brevo from '@getbrevo/brevo';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
