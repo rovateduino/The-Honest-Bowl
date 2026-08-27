@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileSpreadsheet, Download, BookOpen, Sparkles, CheckCircle2, ArrowLeft, CalendarDays, AlertTriangle } from 'lucide-react';
 import { downloadCalculadoraExcel } from '../utils/excelGenerator';
+import { DOWNLOAD_LINKS } from '../data/downloadLinks';
 
 interface DownloadPageProps {
   onBack: () => void;
@@ -59,7 +60,7 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ onBack }) => {
               </div>
             </div>
             <a
-              href="/Natural-Feeding-for-Dogs-Ebook-EN.pdf"
+              href={DOWNLOAD_LINKS.ebookMain}
               download
               className="px-3 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs flex items-center gap-1 shrink-0 transition-colors"
             >
@@ -79,7 +80,7 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ onBack }) => {
               </div>
             </div>
             <a
-              href="/Natural-Feeding-for-Dogs-Ebook-EN.pdf"
+              href={DOWNLOAD_LINKS.ebookMain}
               download
               className="px-3 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs flex items-center gap-1 shrink-0 transition-colors"
             >
@@ -100,7 +101,7 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ onBack }) => {
             </div>
             <div className="flex flex-col gap-2 shrink-0">
               <a
-                href="/Therapeutic-Diets-for-Dogs-10-Recipe.pdf"
+                href={DOWNLOAD_LINKS.therapeuticGuide}
                 download
                 className="px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-[11px] flex items-center gap-1 transition-colors"
               >
@@ -108,7 +109,7 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ onBack }) => {
                 <span>10 Recipes PDF</span>
               </a>
               <a
-                href="/Beyond-the-Recipes-Therapeutic-Companion-Guide.pdf"
+                href={DOWNLOAD_LINKS.companionGuide}
                 download
                 className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold text-[11px] flex items-center gap-1 transition-colors"
               >
@@ -129,7 +130,7 @@ export const DownloadPage: React.FC<DownloadPageProps> = ({ onBack }) => {
               </div>
             </div>
             <a
-              href="/Dog_Safety_Fridge_Chart_and_Grocery_Guide_EN.pdf"
+              href={DOWNLOAD_LINKS.safetyPoster}
               download
               className="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1 shrink-0 transition-colors"
             >

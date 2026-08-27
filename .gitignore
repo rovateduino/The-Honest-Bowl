@@ -13,3 +13,7 @@ firebase-applet-config.json
 bun.lock
 bun.lockb
 checklist.md
+
+# Product files (hosted on GitHub Releases)
+*.pdf
+*.xlsx
